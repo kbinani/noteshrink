@@ -1,12 +1,10 @@
 package main
 
-
 import (
+	"github.com/kbinani/noteshrink"
 	"image/png"
 	"os"
-	"github.com/kbinani/noteshrink"
 )
-
 
 func main() {
 	input := os.Args[1]

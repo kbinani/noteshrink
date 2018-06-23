@@ -1,28 +1,24 @@
 package noteshrink
 
-
 import (
 	"image"
-	"math/rand"
 	"image/color"
+	"math/rand"
 )
 
-
 type Option struct {
-	SampleFraction float32
+	SampleFraction      float32
 	BrightnessThreshold float32
 	SaturationThreshold float32
-	NumColors int
-	KmeansMaxIter int
-	Saturate bool
-	WhiteBackground bool
+	NumColors           int
+	KmeansMaxIter       int
+	Saturate            bool
+	WhiteBackground     bool
 }
-
 
 func MakeDefaultOption() *Option {
 	return &Option{0.05, 0.25, 0.20, 8, 40, true, true}
 }
-
 
 func Shrink(input image.Image, option *Option) *image.RGBA {
 	if option == nil {
@@ -54,7 +50,6 @@ func Shrink(input image.Image, option *Option) *image.RGBA {
 	return shrinked
 }
 
-
 func saturatePalette(palette []rgbf) []rgbf {
 	result := []rgbf{}
 
@@ -75,9 +70,8 @@ func saturatePalette(palette []rgbf) []rgbf {
 	return result
 }
 
-
 func applyPalette(img []rgbf, palette []rgbf, origBgColor, bgColor rgbf, option Option) []rgbf {
-    fgMask := createForegroundMask(origBgColor, img, option)
+	fgMask := createForegroundMask(origBgColor, img, option)
 	result := []rgbf{}
 	for i := 0; i < len(img); i++ {
 		if !fgMask[i] {
@@ -95,7 +89,6 @@ func applyPalette(img []rgbf, palette []rgbf, origBgColor, bgColor rgbf, option 
 	return result
 }
 
-
 func max(a, b float32) float32 {
 	if a > b {
 		return a
@@ -103,7 +96,6 @@ func max(a, b float32) float32 {
 		return b
 	}
 }
-
 
 func min(a, b float32) float32 {
 	if a > b {
@@ -113,7 +105,6 @@ func min(a, b float32) float32 {
 	}
 }
 
-
 func abs(a float32) float32 {
 	if a < 0 {
 		return -a
@@ -121,7 +112,6 @@ func abs(a float32) float32 {
 		return a
 	}
 }
-
 
 func createForegroundMask(bgColor rgbf, samples []rgbf, option Option) []bool {
 	_, sBg, vBg := rgbToHsv(bgColor)
@@ -143,7 +133,6 @@ func createForegroundMask(bgColor rgbf, samples []rgbf, option Option) []bool {
 	return result
 }
 
-
 func quantize(image []rgbf, bitsPerChannel uint8) []rgbf {
 	shift := 8 - bitsPerChannel
 	halfbin := uint8((1 << shift) >> 1)
@@ -153,13 +142,12 @@ func quantize(image []rgbf, bitsPerChannel uint8) []rgbf {
 	for i := 0; i < len(image); i++ {
 		var p rgbf
 		for j := 0; j < 3; j++ {
-			p[j] = float32((uint8(image[i][j]) >> shift) << shift + halfbin)
+			p[j] = float32((uint8(image[i][j])>>shift)<<shift + halfbin)
 		}
 		result = append(result, p)
 	}
 	return result
 }
-
 
 func findBackgroundColor(image []rgbf, bitsPerChannel uint8) rgbf {
 	quantized := quantize(image, bitsPerChannel)
@@ -179,39 +167,36 @@ func findBackgroundColor(image []rgbf, bitsPerChannel uint8) rgbf {
 	return maxvalue
 }
 
-
 func round(v float32) float32 {
 	return float32(int(v + 0.5))
 }
 
-
 func createPalette(samples []rgbf, option Option) ([]rgbf, rgbf) {
 	bgColor := findBackgroundColor(samples, 6)
-    fgMask := createForegroundMask(bgColor, samples, option)
-    data := []rgbf{}
-    for i := 0; i < len(samples); i++ {
-    	if !fgMask[i] {
-    		continue
-    	}
-    	var v rgbf
-    	for j := 0; j < 3; j++ {
-	    	v[j] = float32(samples[i][j])
-    	}
-    	data = append(data, v)
-    }
-    mean := kMeans(data, option.NumColors - 1, option.KmeansMaxIter)
-    palette := []rgbf{}
-    palette = append(palette, bgColor)
-    for i := 0; i < len(mean); i++ {
-    	c := mean[i]
-    	r := round(c[0])
-    	g := round(c[1])
-    	b := round(c[2])
-    	palette = append(palette, rgbf{r, g, b})
-    }
-    return palette, bgColor
+	fgMask := createForegroundMask(bgColor, samples, option)
+	data := []rgbf{}
+	for i := 0; i < len(samples); i++ {
+		if !fgMask[i] {
+			continue
+		}
+		var v rgbf
+		for j := 0; j < 3; j++ {
+			v[j] = float32(samples[i][j])
+		}
+		data = append(data, v)
+	}
+	mean := kMeans(data, option.NumColors-1, option.KmeansMaxIter)
+	palette := []rgbf{}
+	palette = append(palette, bgColor)
+	for i := 0; i < len(mean); i++ {
+		c := mean[i]
+		r := round(c[0])
+		g := round(c[1])
+		b := round(c[2])
+		palette = append(palette, rgbf{r, g, b})
+	}
+	return palette, bgColor
 }
-
 
 func samplePixels(img []rgbf, option Option) []rgbf {
 	numPixels := len(img)
@@ -230,9 +215,7 @@ func samplePixels(img []rgbf, option Option) []rgbf {
 	return result
 }
 
-
 type rgbf [3]float32
-
 
 func load(img image.Image) ([]rgbf, image.Rectangle) {
 	bounds := img.Bounds()
@@ -251,7 +234,6 @@ func load(img image.Image) ([]rgbf, image.Rectangle) {
 	return result, img.Bounds()
 }
 
-
 func add(a, b rgbf) rgbf {
 	var r rgbf
 	for i := 0; i < 3; i++ {
@@ -260,7 +242,6 @@ func add(a, b rgbf) rgbf {
 	return r
 }
 
-
 func mul(a rgbf, scalar float32) rgbf {
 	var r rgbf
 	for i := 0; i < 3; i++ {
@@ -268,7 +249,6 @@ func mul(a rgbf, scalar float32) rgbf {
 	}
 	return r
 }
-
 
 func closest(p rgbf, means []rgbf) int {
 	idx := 0
@@ -283,11 +263,10 @@ func closest(p rgbf, means []rgbf) int {
 	return idx
 }
 
-
-func kMeans(data []rgbf, k int, maxItr int) ([]rgbf) {
+func kMeans(data []rgbf, k int, maxItr int) []rgbf {
 	means := []rgbf{}
 	for i := 0; i < k; i++ {
-		h := float32(i) / float32(k - 1)
+		h := float32(i) / float32(k-1)
 		p := hsvToRgb(h, 1, 1)
 		means = append(means, p)
 	}
@@ -310,7 +289,7 @@ func kMeans(data []rgbf, k int, maxItr int) ([]rgbf) {
 			mLen[cluster]++
 		}
 		for i := range means {
-			m := mul(means[i], 1 / float32(mLen[i]))
+			m := mul(means[i], 1/float32(mLen[i]))
 			means[i] = m
 		}
 		var changes int
@@ -327,7 +306,6 @@ func kMeans(data []rgbf, k int, maxItr int) ([]rgbf) {
 	return means
 }
 
-
 func rgbToHsv(p rgbf) (h, s, v float32) {
 	r := p[0] / 255
 	g := p[1] / 255
@@ -336,60 +314,58 @@ func rgbToHsv(p rgbf) (h, s, v float32) {
 	min := min(min(r, g), b)
 	h = max - min
 	if h > 0 {
-	    if max == r {
-	        h = (g - b) / h
-	        if h < 0 {
-	            h += 6
-	        }
-	    } else if max == g {
-	        h = 2 + (b - r) / h
-	    } else {
-	        h = 4 + (r - g) / h
-	    }
+		if max == r {
+			h = (g - b) / h
+			if h < 0 {
+				h += 6
+			}
+		} else if max == g {
+			h = 2 + (b-r)/h
+		} else {
+			h = 4 + (r-g)/h
+		}
 	}
 	h /= 6
 	s = max - min
 	if max > 0 {
-	    s /= max
+		s /= max
 	}
 	v = max
 	return h, s, v
 }
-
 
 func hsvToRgb(h, s, v float32) rgbf {
 	r := v
 	g := v
 	b := v
 	if s > 0 {
-	    h *= 6.
-	    i := int(h)
-	    f := h - float32(i)
-	    switch (i) {
-	        default:
-	        case 0:
-	            g *= 1 - s * (1 - f)
-	            b *= 1 - s
-	        case 1:
-	            r *= 1 - s * f
-	            b *= 1 - s
-	        case 2:
-	            r *= 1 - s
-	            b *= 1 - s * (1 - f)
-	        case 3:
-	            r *= 1 - s
-	            g *= 1 - s * f
-	        case 4:
-	            r *= 1 - s * (1 - f)
-	            g *= 1 - s
-	        case 5:
-	            g *= 1 - s
-	            b *= 1 - s * f
-	    }
+		h *= 6.
+		i := int(h)
+		f := h - float32(i)
+		switch i {
+		default:
+		case 0:
+			g *= 1 - s*(1-f)
+			b *= 1 - s
+		case 1:
+			r *= 1 - s*f
+			b *= 1 - s
+		case 2:
+			r *= 1 - s
+			b *= 1 - s*(1-f)
+		case 3:
+			r *= 1 - s
+			g *= 1 - s*f
+		case 4:
+			r *= 1 - s*(1-f)
+			g *= 1 - s
+		case 5:
+			g *= 1 - s
+			b *= 1 - s*f
+		}
 	}
 	return rgbf{r * 255, g * 255, b * 255}
 }
-
 
 func squareDistance(a, b rgbf) float32 {
 	var squareDistance float32 = 0
