@@ -289,7 +289,11 @@ func kMeans(data []rgbf, k int, maxItr int) []rgbf {
 			mLen[cluster]++
 		}
 		for i := range means {
-			m := mul(means[i], 1/float32(mLen[i]))
+			count := mLen[i]
+			if count <= 0 {
+				count = 1
+			}
+			m := mul(means[i], 1/float32(count))
 			means[i] = m
 		}
 		var changes int
